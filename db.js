@@ -5,11 +5,13 @@ const SUPABASE_KEY = 'sb_publishable_scfpiRlIpzy_y6hgSMKyGw_UhkhorNj'; // пуб
 const SHOW_DEMO = true;
 // Имя Telegram-бота уведомлений без @ (создайте в @BotFather и впишите сюда), например 'avtobazar_kg_bot'
 const TELEGRAM_BOT = '';
+// Публичный ключ push-уведомлений (приватный хранится на сервере)
+const VAPID_PUBLIC = 'BE2gxAppDkTKaE13AaTLYNzMCMJV-0QfcphzLxrwofqnRWfq9kXrHqu_saAzxuj3z3SnhWKEL_QrAxvkbIMJI8A';
 
 const DB = (() => {
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   let user = null, profile = null;
-  const listeners = [];
+  const listeners = [], recovery = [];
 
   // понятные сообщения вместо технических ошибок
   function humanError(err) {
@@ -40,6 +42,7 @@ const DB = (() => {
     user = session?.user || null;
     if (user) await loadProfile().catch(() => {});
     sb.auth.onAuthStateChange(async (event, s) => {
+      if (event === 'PASSWORD_RECOVERY') setTimeout(() => recovery.forEach(fn => fn()), 0);
       const prev = user?.id;
       user = s?.user || null;
       if (user?.id !== prev) {
@@ -71,6 +74,22 @@ const DB = (() => {
     },
     async signIn(email, password) { unwrap(await sb.auth.signInWithPassword({ email, password })); },
     async signOut() { await sb.auth.signOut(); },
+    onRecovery(fn) { recovery.push(fn); },
+    async resetPassword(email) { unwrap(await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname })); },
+    async setPassword(password) { unwrap(await sb.auth.updateUser({ password })); },
+    async deleteAccount() {
+      // сначала свои фото, потом аккаунт (все записи удалятся каскадом)
+      const { data } = await sb.storage.from('ab-photos').list(user.id, { limit: 1000 });
+      if (data?.length) await sb.storage.from('ab-photos').remove(data.map(f => `${user.id}/${f.name}`));
+      unwrap(await sb.rpc('ab_delete_me'));
+      await sb.auth.signOut();
+    },
+    // статистика посещений: анонимный id сессии в браузере
+    log(kind, ref = '') {
+      let sid;
+      try { sid = localStorage.getItem('ab_sid'); if (!sid) { sid = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); localStorage.setItem('ab_sid', sid); } } catch { sid = 'nostore' + Math.random().toString(36).slice(2, 8); }
+      sb.from('ab_events').insert({ kind, ref: String(ref).slice(0, 120), session: sid.slice(0, 40) }).then(() => { });
+    },
     async saveProfile(fields) { profile = unwrap(await sb.from('ab_profiles').upsert({ id: user.id, ...fields }).select().single()); return profile; },
     async select(table, build = q => q) { return unwrap(await build(sb.from(table).select('*'))); },
     async insert(table, row) { return unwrap(await sb.from(table).insert(row).select().single()); },

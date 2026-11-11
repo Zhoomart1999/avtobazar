@@ -209,6 +209,7 @@
   form.addEventListener('submit', e => {
     e.preventDefault();
     state.f = readForm(); state.page = 1; state.favOnly = false;
+    DB.log('search', [state.f.brand, state.f.model, state.f.body, state.f.priceTo && 'до $' + state.f.priceTo].filter(Boolean).join(' ') || 'все');
     render(); $('#listings').scrollIntoView({ behavior: 'smooth' });
   });
   $('#toggleExtra').addEventListener('click', e => {
@@ -285,6 +286,7 @@
     $('#heroCity').textContent = state.city ? CITY_IN[state.city] : 'Кыргызстане';
     renderBrands();
     updateCount();
+    maybeRemoteCars();
   }
 
   $('#chips').addEventListener('click', e => {
@@ -372,6 +374,7 @@
   function showCar(id) {
     const c = ALL.find(x => x.id === id);
     if (!c) return;
+    DB.log('car', `${c.brand} ${c.model} ${c.year} #${c.id}`);
     const engine = c.fuel === 'Электро' ? 'электро' : `${c.engine.toFixed(1)} л`;
     const specs = [
       ['Год выпуска', c.year], ['Пробег', `${fmt(c.mileage)} км`], ['Кузов', c.body], ['Двигатель', `${engine}${c.hp ? `, ${c.hp} л.с.` : ''}`],
@@ -410,7 +413,7 @@
     });
     $('#dFav').addEventListener('click', e => { toggleFav(c.id); e.currentTarget.textContent = favs.has(c.id) ? '❤️' : '🤍'; });
     $('#shareBtn').addEventListener('click', async () => {
-      const url = location.href;
+      const url = shareUrl('car', c.id);
       try {
         if (navigator.share) await navigator.share({ title: `${c.brand} ${c.model}`, url });
         else { await navigator.clipboard.writeText(url); toast('Ссылка скопирована'); }
@@ -604,6 +607,7 @@
   function showLot(id) {
     const l = lots.find(x => x.id === id);
     if (!l) return;
+    if (openLotId !== id) DB.log('lot', `${carOf(l).brand} ${carOf(l).model} #${l.id}`);
     openLotId = id;
     const c = carOf(l);
     const gal = gallery(c);
@@ -802,6 +806,7 @@
     $('#partsMore').hidden = left <= 0;
     $('#partsMore').textContent = `Показать ещё ${Math.min(PARTS_PAGE, left)} из ${fmt(left)}`;
     $('#partsTotal').textContent = fmt(PARTS.length);
+    maybeRemoteParts();
     const counts = {};
     PARTS.forEach(p => { if (partMatches(p, ps, true)) counts[p.cat] = (counts[p.cat] || 0) + 1; });
     const all = Object.values(counts).reduce((a, b) => a + b, 0);
@@ -820,7 +825,7 @@
   $$('input[name="pfCond"]').forEach(r => r.addEventListener('change', () => { ps.cond = r.value; ps.page = 1; renderParts(); }));
   $('#pfOrig').addEventListener('change', e => { ps.orig = e.target.checked; ps.page = 1; renderParts(); });
   $('#pfSort').addEventListener('change', e => { ps.sort = e.target.value; ps.page = 1; renderParts(); });
-  $('#partsSearch').addEventListener('submit', e => { e.preventDefault(); ps.q = $('#partsQuery').value.trim(); ps.page = 1; renderParts(); });
+  $('#partsSearch').addEventListener('submit', e => { e.preventDefault(); ps.q = $('#partsQuery').value.trim(); ps.page = 1; if (ps.q) DB.log('parts_search', ps.q.toLowerCase()); renderParts(); });
   $('#partsQuery').addEventListener('search', () => { ps.q = $('#partsQuery').value.trim(); ps.page = 1; renderParts(); });
   $('#partCats').addEventListener('click', e => {
     const b = e.target.closest('[data-cat]'); if (!b) return;
@@ -856,6 +861,7 @@
   function showPart(id) {
     const p = PARTS.find(x => x.id === id);
     if (!p) return;
+    DB.log('part', `${p.title} #${p.id}`);
     const ph = partPhoto(p);
     const cat = PART_CATS.find(c => c.id === p.cat);
     const specs = [['Артикул', p.sku], ['Категория', cat.name], ['Производитель', p.maker], ['Тип', p.orig], ['Состояние', p.cond],
@@ -1179,7 +1185,7 @@
     ms.q = norm(ms.q) === norm(b.dataset.q) ? '' : b.dataset.q; ms.cat = ''; ms.page = 1;
     $('#mastersQuery').value = ms.q; renderMasters();
   });
-  $('#mastersSearch').addEventListener('submit', e => { e.preventDefault(); ms.q = $('#mastersQuery').value.trim(); ms.page = 1; renderMasters(); });
+  $('#mastersSearch').addEventListener('submit', e => { e.preventDefault(); ms.q = $('#mastersQuery').value.trim(); ms.page = 1; if (ms.q) DB.log('masters_search', ms.q.toLowerCase()); renderMasters(); });
   $('#mastersQuery').addEventListener('input', e => { if (!e.target.value) { ms.q = ''; ms.page = 1; renderMasters(); } });
   [['#mfMobile', 'mobile'], ['#mfToday', 'today'], ['#mfWarranty', 'warranty']].forEach(([sel, k]) =>
     $(sel).addEventListener('change', e => { ms[k] = e.target.checked; ms.page = 1; renderMasters(); }));
@@ -1216,6 +1222,7 @@
     const m = MASTERS.find(x => x.id === id);
     if (!m) return;
     if (!svcName && openMasterId === id && !$('#masterModal').hidden) return; // уже открыт (например, на шаге записи)
+    if (openMasterId !== id) DB.log('master', `${m.name} #${m.id}`);
     openMasterId = id;
     if (svcName) { Object.assign(book, { day: 0, time: '', svc: svcName }); renderBooking(m); }
     else renderMasterInfo(m);
@@ -1535,6 +1542,7 @@
     openModal($('#authModal'));
   }
   function renderAuth(mode, note = '') {
+    if (mode === 'forgot' || mode === 'newpass') return renderAuthExtra(mode, note);
     const login = mode === 'login';
     $('#authBody').innerHTML = `<h2 class="modal__title">${login ? 'Вход' : 'Регистрация'}</h2>
       <div class="seg auth-seg"><label><input type="radio" name="authMode" value="login" ${login ? 'checked' : ''}><span>Вход</span></label><label><input type="radio" name="authMode" value="signup" ${login ? '' : 'checked'}><span>Регистрация</span></label></div>
@@ -1547,7 +1555,9 @@
         ${login ? '' : '<label class="check consent"><input type="checkbox" required><span>Принимаю <a href="terms.html" target="_blank">пользовательское соглашение</a> и <a href="privacy.html" target="_blank">политику конфиденциальности</a></span></label>'}
         <button class="btn btn--primary btn--lg">${login ? 'Войти' : 'Создать аккаунт'}</button>
       </form>
+      ${login ? '<button class="link-btn" data-forgot>Забыли пароль?</button>' : ''}
       <p class="muted small">Аккаунт нужен, чтобы размещать объявления, делать ставки, записываться к мастерам и оформлять заказы.</p>`;
+    $('[data-forgot]', $('#authBody'))?.addEventListener('click', () => renderAuth('forgot'));
     $$('input[name="authMode"]', $('#authBody')).forEach(r => r.addEventListener('change', () => renderAuth(r.value)));
     $('#authForm').addEventListener('submit', async e => {
       e.preventDefault();
@@ -1630,12 +1640,18 @@
           <label class="opt"><input type="radio" name="notify" value="none" ${pr.notify === 'none' || !pr.notify ? 'checked' : ''}><span><b>Только на сайте</b><small>когда сайт открыт</small></span></label>
           <label class="opt"><input type="radio" name="notify" value="telegram" ${pr.notify === 'telegram' ? 'checked' : ''}><span><b>Telegram</b><small>${pr.tg_chat_id ? '✓ подключён' : 'нужно подключить бота'}</small></span></label>
           <label class="opt"><input type="radio" name="notify" value="whatsapp" ${pr.notify === 'whatsapp' ? 'checked' : ''}><span><b>WhatsApp</b><small>на номер ниже</small></span></label>
+          <label class="opt"><input type="radio" name="notify" value="email" ${pr.notify === 'email' ? 'checked' : ''}><span><b>Email</b><small>${esc(DB.user.email)}</small></span></label>
         </div>
         ${tgLink ? `<a class="btn btn--ghost" href="${tgLink}" target="_blank" rel="noopener">${pr.tg_chat_id ? '🔄 Переподключить Telegram' : '📲 Подключить Telegram'}</a>`
           : '<p class="muted small" style="text-align:left">Telegram-бот ещё не настроен администратором.</p>'}
         <label>Номер WhatsApp<input class="inp" name="wa_phone" type="tel" value="${esc(pr.wa_phone || '')}" placeholder="+996 700 123 456"></label>
         <button class="btn btn--primary">Сохранить</button></form>
-        <p class="muted small" style="text-align:left">Имя показывается в аукционе и чатах (например, «${esc((pr.name || 'Азамат').split(' ')[0])} #${DB.user.id.slice(0, 3).toUpperCase()}»).</p>`;
+        <p class="muted small" style="text-align:left">Имя показывается в аукционе и чатах (например, «${esc((pr.name || 'Азамат').split(' ')[0])} #${DB.user.id.slice(0, 3).toUpperCase()}»).</p>
+        <div class="lot__label" style="margin-top:18px">Push-уведомления на этом устройстве</div>
+        <div class="row-btns row-btns--left"><button class="btn btn--ghost" data-push>${(await pushSubscription()) ? '🔕 Отключить push' : '🔔 Включить push'}</button><button class="btn btn--ghost" data-test-notify>Проверить уведомления</button></div>
+        <p class="muted small" style="text-align:left">Push приходят, даже когда сайт закрыт. На iPhone — если сайт добавлен на экран «Домой».</p>
+        <div class="lot__label" style="margin-top:18px">Удаление аккаунта</div>
+        <button class="btn btn--ghost danger" data-delete-me>Удалить аккаунт и все мои данные</button>`;
     },
     async ads() {
       const uid = DB.user.id;
@@ -1727,6 +1743,7 @@
     if (ad) {
       const [table, id, action] = ad.dataset.ad.split('|');
       if (action === 'delete' && !confirm('Удалить объявление навсегда?')) return;
+      if (isAdmin && cab.tab === 'admin') adminLog('ad_' + action, ad.dataset.ad);
       try {
         if (action === 'delete') await DB.remove(table, +id);
         else await DB.update(table, +id, { status: action });
@@ -1810,6 +1827,7 @@
       await loadRemote();
       await Promise.all([loadLots(), loadMine(), afterLogin(), loadRate()]);
       route();
+      DB.log('visit', document.referrer ? new URL(document.referrer).hostname : '');
     }).catch(e => toast(DB.humanError(e)));
     DB.onAuth(async u => {
       updateAccBtn();
@@ -1819,6 +1837,7 @@
       if (afterAuth) { const fn = afterAuth; afterAuth = null; closeModal($('#authModal')); fn(); }
       else if (!$('#authModal').hidden) closeModal($('#authModal'));
     });
+    DB.onRecovery(() => { renderAuth('newpass'); openModal($('#authModal')); });
     DB.listen('ab_bids', onBid);
     DB.listen('ab_messages', onMessage);
     DB.listen('ab_orders', ({ eventType, new: o }) => {
@@ -1865,10 +1884,22 @@
     return `<div class="extra-acts">
       ${x.uid && !own ? `<button class="btn btn--ghost" data-chat="${x.uid}|${kind}:${x.dbId}|${t}">💬 ${kind === 'master' ? 'Написать мастеру' : 'Написать продавцу'}</button>` : ''}
       ${own ? `<button class="btn btn--ghost" data-edit="${kind}|${x.dbId}">✏️ Редактировать</button><span class="muted small">Это ваше ${kind === 'master' ? 'профиль' : 'объявление'}</span>` : ''}
+      ${kind === 'car' ? '' : `<button class="btn btn--ghost" data-share="${kind}|${x.id}|${t}">↗ Поделиться</button>`}
       ${own ? '' : `<button class="link-btn muted" data-report="${kind}|${x.id}|${t}">⚑ Пожаловаться</button>`}
     </div>`;
   }
+  // ссылка на страницу превью (share/*.html) — с фото и ценой в WhatsApp/Telegram
+  const shareUrl = (kind, id) => location.origin + location.pathname.replace(/[^/]*$/, '') + `share/${kind}-${id}.html`;
+  async function shareLink(kind, id, title) {
+    const url = shareUrl(kind, id);
+    try {
+      if (navigator.share) await navigator.share({ title, url });
+      else { await navigator.clipboard.writeText(url); toast('Ссылка скопирована'); }
+    } catch { }
+  }
   document.addEventListener('click', e => {
+    const sh = e.target.closest('[data-share]');
+    if (sh) { const [kind, id, t] = sh.dataset.share.split('|'); return shareLink(kind, +id, decodeURIComponent(t)); }
     const ch = e.target.closest('[data-chat]');
     if (ch) { const [uid, ref, t] = ch.dataset.chat.split('|'); return requireAuth(() => startChat(uid, ref, decodeURIComponent(t))); }
     const rp = e.target.closest('[data-report]');
@@ -2064,7 +2095,7 @@
     const now = new Date(Date.now() + 36e5 - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
     const adRow = (t, r, title, price) => `<div class="cab-item"><div class="cab-item__img">${(t === 'ab_cars' ? r.photos[0] : r.photo) ? `<img src="${t === 'ab_cars' ? r.photos[0] : r.photo}" alt="">` : '📄'}</div>
       <div class="cab-item__info"><b>${esc(title)}</b><small>${price} · ${esc(r.city)} · ${esc(r.phone)} · <span class="st st--${r.status}">${AD_STATUS[r.status]}</span></small></div>
-      <div class="cab-item__act">${r.status === 'active' ? `<button class="btn btn--ghost" data-ad="${t}|${r.id}|hidden">Скрыть</button>` : `<button class="btn btn--ghost" data-ad="${t}|${r.id}|active">Вернуть</button>`}<button class="btn btn--ghost danger" data-ad="${t}|${r.id}|delete">🗑</button></div></div>`;
+      <div class="cab-item__act">${r.status === 'active' ? `<button class="btn btn--ghost" data-ad="${t}|${r.id}|hidden">Скрыть</button>` : `<button class="btn btn--ghost" data-ad="${t}|${r.id}|active">Вернуть</button>`}<button class="btn btn--ghost danger" data-ad="${t}|${r.id}|delete">🗑</button><button class="btn btn--ghost" data-adm-ban="${r.user_id}|${encodeURIComponent(title)}" title="Заблокировать автора">🚫</button></div></div>`;
     return `<div class="adm-stats">${STATS.map(([k, v]) => `<div><b>${st[k]}</b><small>${v}</small></div>`).join('')}</div>
       <div class="lot__label">Жалобы (${reports.length})</div>
       ${reports.length ? reports.map(r => `<div class="cab-card"><div class="cab-card__top"><b>${esc(r.title || r.kind)}</b><small>${ago(Date.parse(r.created_at))}</small></div><p>${esc(r.reason)}</p>
@@ -2074,7 +2105,7 @@
       <div class="lot__label" style="margin-top:16px">Мастера и сервисы</div>
       ${masters.length ? masters.map(m => `<div class="cab-item"><div class="cab-item__img">${m.photo ? `<img src="${m.photo}" alt="">` : '🔧'}</div>
         <div class="cab-item__info"><b>${esc(m.name)} ${m.verified ? '<span class="st st--confirmed">✓ проверен</span>' : ''}</b><small>${esc(m.city)}, ${esc(m.addr)} · ${esc(m.phone)}</small></div>
-        <div class="cab-item__act"><button class="btn btn--ghost" data-adm-verify="${m.id}|${!m.verified}">${m.verified ? 'Снять ✓' : 'Проверен ✓'}</button><button class="btn btn--ghost danger" data-adm-mdel="${m.id}">🗑</button></div></div>`).join('') : emptyNote('Мастеров пока нет')}
+        <div class="cab-item__act"><button class="btn btn--ghost" data-adm-verify="${m.id}|${!m.verified}">${m.verified ? 'Снять ✓' : 'Проверен ✓'}</button><button class="btn btn--ghost danger" data-adm-mdel="${m.id}">🗑</button><button class="btn btn--ghost" data-adm-ban="${m.user_id}|${encodeURIComponent(m.name)}" title="Заблокировать">🚫</button></div></div>`).join('') : emptyNote('Мастеров пока нет')}
       <div class="lot__label" style="margin-top:16px">Последние объявления: авто</div>
       ${cars.length ? cars.map(r => adRow('ab_cars', r, `${r.brand} ${r.model}, ${r.year}`, usd(r.price))).join('') : emptyNote('Пока нет')}
       <div class="lot__label" style="margin-top:16px">Последние объявления: запчасти</div>
@@ -2096,6 +2127,7 @@
   async function adminClick(e) {
     const el = e.target.closest('[data-adm-report],[data-adm-hide],[data-adm-verify],[data-adm-mdel],[data-adm-lotdel]');
     if (!el) return false;
+    adminLog(Object.keys(el.dataset)[0], Object.values(el.dataset)[0]);
     try {
       if (el.dataset.admReport) { await DB.update('ab_reports', +el.dataset.admReport, { status: 'done' }); toast('Жалоба закрыта'); }
       if (el.dataset.admHide) {
@@ -2166,6 +2198,183 @@
       if (v > 50 && v < 200) { RATE = v; $('#rate').textContent = RATE.toFixed(2).replace('.', ','); render(); }
     } catch { }
   }
+
+  // ---------- восстановление пароля ----------
+  function renderAuthExtra(mode, note) {
+    const forgot = mode === 'forgot';
+    $('#authBody').innerHTML = `<h2 class="modal__title">${forgot ? 'Восстановление пароля' : 'Новый пароль'}</h2>
+      ${note ? `<div class="auth-note">${note}</div>` : ''}
+      <form class="auth-form" id="authForm">
+        ${forgot ? '<input class="inp" name="email" type="email" placeholder="Email, указанный при регистрации" required autocomplete="email">'
+          : '<input class="inp" name="password" type="password" placeholder="Новый пароль (не короче 6 символов)" minlength="6" required autocomplete="new-password">'}
+        <button class="btn btn--primary btn--lg">${forgot ? 'Прислать ссылку' : 'Сохранить пароль'}</button>
+      </form>
+      ${forgot ? '<button class="link-btn" data-back-login>← Вернуться ко входу</button>' : ''}`;
+    $('[data-back-login]', $('#authBody'))?.addEventListener('click', () => renderAuth('login'));
+    $('#authForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const f = e.target, btn = $('.btn--primary', f);
+      busy(btn, true);
+      try {
+        if (forgot) {
+          await DB.resetPassword(f.email.value.trim());
+          renderAuth('login', `📩 Если такой аккаунт есть, на <b>${esc(f.email.value.trim())}</b> придёт письмо со ссылкой. Откройте её — здесь появится поле для нового пароля.`);
+        } else {
+          await DB.setPassword(f.password.value);
+          closeModal($('#authModal')); toast('Пароль изменён, вы вошли');
+        }
+      } catch (err) { toast(err.message); busy(btn, false); }
+    });
+  }
+
+  // ---------- push-уведомления и удаление аккаунта ----------
+  const urlB64 = b64 => {
+    const pad = '='.repeat((4 - b64.length % 4) % 4);
+    const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+  };
+  async function pushSubscription() {
+    try { const reg = await navigator.serviceWorker?.getRegistration(); return reg ? await reg.pushManager.getSubscription() : null; } catch { return null; }
+  }
+  async function togglePush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return toast('Этот браузер не поддерживает push-уведомления');
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (!reg) return toast('Push работают на опубликованном сайте (https)');
+    const cur = await reg.pushManager.getSubscription();
+    if (cur) {
+      await DB.sb.from('ab_push_subs').delete().eq('endpoint', cur.endpoint);
+      await cur.unsubscribe();
+      toast('Push-уведомления отключены'); return renderCab();
+    }
+    if (await Notification.requestPermission() !== 'granted') return toast('Разрешите уведомления для сайта в настройках браузера');
+    const sub = (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(VAPID_PUBLIC) })).toJSON();
+    const { error } = await DB.sb.from('ab_push_subs').upsert({ endpoint: sub.endpoint, user_id: DB.user.id, p256dh: sub.keys.p256dh, auth: sub.keys.auth });
+    toast(error ? DB.humanError(error) : 'Push-уведомления включены');
+    renderCab();
+  }
+  $('#cabBody').addEventListener('click', async e => {
+    if (e.target.closest('[data-push]')) return togglePush().catch(err => toast(err.message));
+    if (e.target.closest('[data-test-notify]')) {
+      const { data, error } = await DB.sb.functions.invoke('ab-notify', { body: { action: 'test' } });
+      return toast(error || !data?.ok ? 'Не удалось отправить тест' : 'Тест отправлен — проверьте телефон или Telegram');
+    }
+    if (e.target.closest('[data-delete-me]')) {
+      if (!confirm('Удалить аккаунт? Объявления, заказы, записи, сообщения и ставки будут удалены навсегда.')) return;
+      if (prompt('Чтобы подтвердить, напишите: УДАЛИТЬ') !== 'УДАЛИТЬ') return toast('Удаление отменено');
+      try { await DB.deleteAccount(); closeModal($('#cabModal')); await loadRemote(); toast('Аккаунт удалён'); }
+      catch (err) { toast(err.message); }
+      return;
+    }
+    const ban = e.target.closest('[data-adm-ban]');
+    if (ban) {
+      const [uid, t] = ban.dataset.admBan.split('|');
+      if (uid === DB.user.id) return toast('Нельзя заблокировать себя');
+      const reason = prompt(`Заблокировать автора «${decodeURIComponent(t)}»? Причина:`);
+      if (!reason) return;
+      const days = prompt('На сколько дней? Пусто — навсегда', '30');
+      const until = days && +days > 0 ? new Date(Date.now() + days * 864e5).toISOString() : null;
+      try {
+        await DB.sb.from('ab_bans').upsert({ user_id: uid, reason: reason.slice(0, 300), until }).then(r => { if (r.error) throw new Error(DB.humanError(r.error)); });
+        adminLog('ban', `${decodeURIComponent(t)}: ${reason}`); toast('Пользователь заблокирован'); renderCab();
+      } catch (err) { toast(err.message); }
+      return;
+    }
+    const unban = e.target.closest('[data-adm-unban]');
+    if (unban) {
+      await DB.sb.from('ab_bans').delete().eq('user_id', unban.dataset.admUnban);
+      adminLog('unban', unban.dataset.admUnban); toast('Блокировка снята'); renderCab();
+    }
+  });
+
+  // ---------- админ: статистика, блокировки, журнал ----------
+  function adminLog(action, target = '') {
+    if (isAdmin) DB.sb.from('ab_admin_log').insert({ action: String(action).slice(0, 60), target: String(target).slice(0, 200) }).then(() => { });
+  }
+  const adminMain = CAB.admin;
+  CAB.admin = async () => {
+    const [main, an, bans, log] = await Promise.all([
+      adminMain(),
+      DB.rpc('ab_admin_analytics', { p_days: 7 }),
+      DB.select('ab_bans', q => q.order('created_at', { ascending: false })),
+      DB.select('ab_admin_log', q => q.order('created_at', { ascending: false }).limit(30))
+    ]);
+    const max = Math.max(1, ...an.daily.map(d => d.visitors));
+    const KIND = { car: '🚗', part: '🔧', master: '🧑‍🔧', lot: '🔨' };
+    return `<div class="lot__label">Посетители за 7 дней: ${an.visitors}</div>
+      <div class="bars">${an.daily.map(d => `<div title="${d.visitors} посетителей, ${d.actions} действий"><span style="height:${Math.round(d.visitors / max * 100)}%"></span><b>${d.visitors}</b><small>${d.day}</small></div>`).join('') || '<p class="muted small">Данных пока нет</p>'}</div>
+      <div class="adm-two">
+        <div><div class="lot__label">Что ищут</div>${an.top_searches.length ? `<ol class="adm-list">${an.top_searches.map(t => `<li><span>${esc(t.ref)}</span><b>${t.n}</b></li>`).join('')}</ol>` : '<p class="muted small">Пока нет поисков</p>'}</div>
+        <div><div class="lot__label">Что смотрят</div>${an.top_views.length ? `<ol class="adm-list">${an.top_views.map(t => `<li><span>${KIND[t.kind] || ''} ${esc(t.ref.replace(/ #\d+$/, ''))}</span><b>${t.n}</b></li>`).join('')}</ol>` : '<p class="muted small">Пока нет просмотров</p>'}</div>
+      </div>
+      ${main}
+      <div class="lot__label" style="margin-top:16px">Заблокированные (${bans.length})</div>
+      ${bans.length ? bans.map(b => `<div class="cab-item"><div class="cab-item__img">🚫</div><div class="cab-item__info"><b>${esc(b.reason || 'без причины')}</b><small>${b.until ? 'до ' + new Date(b.until).toLocaleDateString('ru-RU') : 'навсегда'} · ${b.user_id.slice(0, 8)}</small></div>
+        <div class="cab-item__act"><button class="btn btn--ghost" data-adm-unban="${b.user_id}">Разблокировать</button></div></div>`).join('') : emptyNote('Никто не заблокирован')}
+      <div class="lot__label" style="margin-top:16px">Журнал модерации</div>
+      ${log.length ? `<ol class="adm-list adm-log">${log.map(l => `<li><span>${esc(l.action)} · ${esc(l.target)}</span><small>${esc(l.admin_email.split('@')[0])} · ${ago(Date.parse(l.created_at))}</small></li>`).join('')}</ol>` : emptyNote('Действий пока нет')}`;
+  };
+
+  // ---------- поиск по базе на сервере ----------
+  let remoteCarKey = JSON.stringify([{}, '']), remotePartKey = JSON.stringify(['', '', '', '', '']);
+  const likeSafe = q => q.replace(/[%_,()]/g, ' ').trim();
+  function maybeRemoteCars() {
+    const f = { ...state.f }; delete f.photo;
+    const key = JSON.stringify([f, state.city]);
+    if (key === remoteCarKey) return;
+    remoteCarKey = key;
+    clearTimeout(maybeRemoteCars.t);
+    maybeRemoteCars.t = setTimeout(async () => {
+      try {
+        const rows = await DB.select('ab_cars', q => {
+          q = q.eq('status', 'active');
+          if (f.brand) q = q.eq('brand', f.brand);
+          if (f.model) q = q.eq('model', f.model);
+          if (f.yearFrom) q = q.gte('year', +f.yearFrom);
+          if (f.yearTo) q = q.lte('year', +f.yearTo);
+          if (f.priceFrom) q = q.gte('price', +f.priceFrom);
+          if (f.priceTo) q = q.lte('price', +f.priceTo);
+          ['body', 'fuel', 'gear', 'wheel'].forEach(k => { if (f[k]) q = q.eq(k, f[k]); });
+          if (f.cleared) q = q.eq('cleared', true);
+          if (state.city) q = q.eq('city', state.city);
+          return q.order('created_at', { ascending: false }).limit(300);
+        });
+        if (key !== remoteCarKey) return;
+        let added = 0;
+        rows.forEach(r => { const c = carFromRow(r), i = ALL.findIndex(x => x.id === c.id); if (i >= 0) ALL[i] = c; else { ALL.unshift(c); added++; } });
+        if (added) render();
+      } catch { }
+    }, 300);
+  }
+  function maybeRemoteParts() {
+    const key = JSON.stringify([ps.q, ps.cat, ps.brand, ps.model, ps.cond]);
+    if (key === remotePartKey) return;
+    remotePartKey = key;
+    clearTimeout(maybeRemoteParts.t);
+    maybeRemoteParts.t = setTimeout(async () => {
+      try {
+        const rows = await DB.select('ab_parts', q => {
+          q = q.eq('status', 'active');
+          if (ps.cat) q = q.eq('cat', ps.cat);
+          if (ps.brand) q = q.in('brand', [ps.brand, '']);
+          if (ps.model) q = q.in('model', [ps.model, '']);
+          if (ps.cond) q = q.eq('cond', ps.cond);
+          const words = likeSafe(ps.q).split(/\s+/).filter(w => w.length > 2).slice(0, 3);
+          words.forEach(w => { q = q.ilike('title', `%${w.length > 4 ? w.slice(0, -1) : w}%`); });
+          return q.order('created_at', { ascending: false }).limit(300);
+        });
+        if (key !== remotePartKey) return;
+        let added = 0;
+        rows.forEach(r => { const p = partFromRow(r), i = PARTS.findIndex(x => x.id === p.id); if (i >= 0) PARTS[i] = p; else { PARTS.unshift(p); added++; } });
+        if (added) renderParts();
+      } catch { }
+    }, 300);
+  }
+
+  // ---------- нет интернета ----------
+  const offlineBar = () => { $('#offline').hidden = navigator.onLine; };
+  addEventListener('online', () => { offlineBar(); toast('Связь восстановлена'); loadRemote(); loadLots(); });
+  addEventListener('offline', offlineBar);
+  offlineBar();
 
   // ---------- news ----------
   $('#newsGrid').innerHTML = NEWS.map(n => `<a href="#" class="news__item"><div class="news__img" style="background:${n.bg}">${n.e}</div>

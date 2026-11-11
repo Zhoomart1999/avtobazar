@@ -1,0 +1,31 @@
+# Каждый час и при каждом изменении собирает страницы превью объявлений (share/*.html) и sitemap.xml
+name: Share pages
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['share/**', 'sitemap.xml']
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: share-pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/build-share.mjs
+      - name: Commit changes
+        run: |
+          git config user.name "avtobazar-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add share sitemap.xml
+          if git diff --cached --quiet; then echo "без изменений"; exit 0; fi
+          git commit -m "Обновлены страницы объявлений и sitemap"
+          git push

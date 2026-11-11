@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://zhoomart1999.github.io/avtobazar/sitemap.xml
