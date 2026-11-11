@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#e11d2e"/>
+  <g transform="translate(256 210)">
+    <circle r="92" fill="#ffc93c"/>
+    <g fill="#ffc93c">
+      <path d="M0-150 12-108H-12zM0 150 12 108H-12zM-150 0-108-12V12zM150 0 108-12V12z"/>
+      <path d="M-106-106-71-82-82-71zM106 106 71 82 82 71zM-106 106-82 71-71 82zM106-106 82-71 71-82z"/>
+    </g>
+    <circle r="52" fill="#e11d2e"/>
+  </g>
+  <text x="256" y="440" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="92" fill="#fff" text-anchor="middle">АВТО</text>
+</svg>

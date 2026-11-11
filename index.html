@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Автобазар — авто, запчасти и аукцион в Кыргызстане</title>
+  <meta name="description" content="Купить и продать авто и запчасти в Бишкеке, Оше и по всему Кыргызстану. Тысячи объявлений, удобный поиск.">
+  <meta name="theme-color" content="#e11d2e">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="img/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="img/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Автобазар">
+  <meta property="og:title" content="Автобазар — авто, запчасти, аукцион и мастера в Кыргызстане">
+  <meta property="og:description" content="Объявления о продаже авто в Бишкеке, Оше и по всему Кыргызстану, запчасти с доставкой, онлайн-аукцион и запись к мастерам.">
+  <meta property="og:image" content="img/icons/icon-512.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=6">
+</head>
+<body>
+
+<header class="header">
+  <div class="container header__row">
+    <button class="icon-btn burger" id="burger" aria-label="Меню">
+      <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <a href="#" class="logo" aria-label="Автобазар">
+      <span class="logo__sun"></span>
+      <span>Авто<b>базар</b></span>
+    </a>
+    <nav class="nav" id="nav">
+      <a href="#listings" class="nav__link active">Автомобили</a>
+      <a href="#auction" class="nav__link nav__link--auc"><span class="live-dot"></span>Аукцион</a>
+      <a href="#parts" class="nav__link">Запчасти</a>
+      <a href="#masters" class="nav__link">Мастера</a>
+      <a href="#listings" class="nav__link nav__link--x" data-body="Минивэн">Минивэны</a>
+      <a href="#listings" class="nav__link nav__link--x" data-fuel="Электро">Электромобили</a>
+      <a href="#brands" class="nav__link nav__link--x">Марки</a>
+      <a href="#news" class="nav__link nav__link--x">Новости</a>
+      <a href="#listings" class="nav__link nav__link--m" id="navFav">❤ Избранное</a>
+      <a href="#" class="nav__link nav__link--m" data-lang-switch onclick="event.preventDefault(); setLang(LANG === 'ky' ? 'ru' : 'ky')">Кыргызча</a>
+    </nav>
+    <div class="header__right">
+      <button class="lang-btn" data-lang-switch onclick="setLang(LANG === 'ky' ? 'ru' : 'ky')">Кыргызча</button>
+      <label class="city">
+        <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <select id="citySelect" aria-label="Город"></select>
+      </label>
+      <button class="icon-btn fav-btn" id="favToggle" aria-label="Избранное">
+        <svg viewBox="0 0 24 24"><path d="M12 20s-7-4.5-9-9.5C1.7 7 4 4 7 4c2 0 3.5 1.2 5 3 1.5-1.8 3-3 5-3 3 0 5.3 3 4 6.5-2 5-9 9.5-9 9.5z"/></svg>
+        <span class="badge" id="favCount">0</span>
+      </button>
+      <button class="icon-btn cart-btn" id="cartToggle" aria-label="Корзина">
+        <svg viewBox="0 0 24 24"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>
+        <span class="badge" data-cart-count>0</span>
+      </button>
+      <button class="icon-btn acc-btn" id="accBtn" aria-label="Войти">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+        <span class="acc-btn__dot" hidden></span>
+        <span class="badge" data-n="0">0</span>
+      </button>
+      <button class="btn btn--primary btn--post" id="openPost">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Подать объявление</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero__bg" aria-hidden="true">
+      <svg viewBox="0 0 1440 360" preserveAspectRatio="xMidYMax slice">
+        <path class="m1" d="M0 360V230l120-70 90 50 140-120 110 80 90-60 160 130 120-90 150 110 140-150 130 90 90-40 100 70v130z"/>
+        <path class="snow" d="M350 90l-38 33 20-4 18 14 14-16 26 6zM1050 80l-34 37 22-6 14 12 16-14 20 4z"/>
+        <path class="m2" d="M0 360V280l160-60 140 50 180-90 150 70 170-60 160 80 180-70 150 60 150-40v140z"/>
+      </svg>
+    </div>
+    <div class="container hero__inner">
+      <h1 class="hero__title">Автомобили в <span id="heroCity">Кыргызстане</span></h1>
+      <p class="hero__sub"><b id="totalCount">0</b> объявлений · курс $1 = <span id="rate"></span> сом</p>
+
+      <form class="search" id="searchForm" autocomplete="off">
+        <div class="search__grid">
+          <div class="field">
+            <label>Марка</label>
+            <select name="brand" id="fBrand"><option value="">Любая</option></select>
+          </div>
+          <div class="field">
+            <label>Модель</label>
+            <select name="model" id="fModel" disabled><option value="">Любая</option></select>
+          </div>
+          <div class="field field--pair">
+            <label>Год</label>
+            <div class="pair">
+              <input type="number" name="yearFrom" placeholder="от" min="1980" max="2026" inputmode="numeric">
+              <input type="number" name="yearTo" placeholder="до" min="1980" max="2026" inputmode="numeric">
+            </div>
+          </div>
+          <div class="field field--pair">
+            <label>Цена, $</label>
+            <div class="pair">
+              <input type="number" name="priceFrom" placeholder="от" min="0" inputmode="numeric">
+              <input type="number" name="priceTo" placeholder="до" min="0" inputmode="numeric">
+            </div>
+          </div>
+          <div class="field extra">
+            <label>Кузов</label>
+            <select name="body"><option value="">Любой</option></select>
+          </div>
+          <div class="field extra">
+            <label>Топливо</label>
+            <select name="fuel"><option value="">Любое</option></select>
+          </div>
+          <div class="field extra">
+            <label>КПП</label>
+            <select name="gear"><option value="">Любая</option></select>
+          </div>
+          <div class="field extra">
+            <label>Руль</label>
+            <div class="seg" role="radiogroup">
+              <label><input type="radio" name="wheel" value="" checked><span>Любой</span></label>
+              <label><input type="radio" name="wheel" value="Левый"><span>Левый</span></label>
+              <label><input type="radio" name="wheel" value="Правый"><span>Правый</span></label>
+            </div>
+          </div>
+        </div>
+        <div class="search__foot">
+          <div class="checks">
+            <label class="check"><input type="checkbox" name="cleared"><span>Растаможен в КР</span></label>
+            <label class="check"><input type="checkbox" name="photo" checked><span>С фото</span></label>
+            <label class="check"><input type="checkbox" name="exchange"><span>Обмен</span></label>
+          </div>
+          <button type="button" class="link-btn" id="toggleExtra">Расширенный поиск</button>
+          <button type="button" class="link-btn muted" id="resetForm">Сбросить</button>
+          <button type="submit" class="btn btn--primary btn--lg" id="showBtn">Показать</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="section" id="brands">
+    <div class="container">
+      <div class="section__head">
+        <h2>Популярные марки</h2>
+        <button class="link-btn" id="allBrands">Все марки</button>
+      </div>
+      <div class="brands" id="brandGrid"></div>
+    </div>
+  </section>
+
+  <section class="auction" id="auction">
+    <div class="container">
+      <div class="auc-head">
+        <div>
+          <div class="auc-head__kicker"><span class="live-dot"></span> <b id="aucLiveCount">0</b> лотов в эфире</div>
+          <h2>Аукцион автомобилей</h2>
+          <p>Проверенные авто со стартовой ценой от 50% рыночной. Ставки в реальном времени.</p>
+        </div>
+        <div class="tabs" id="aucTabs" role="tablist">
+          <button data-tab="live" class="active">Идут сейчас <b>0</b></button>
+          <button data-tab="soon">Скоро <b>0</b></button>
+          <button data-tab="done">Завершённые <b>0</b></button>
+        </div>
+      </div>
+      <div class="lots" id="lots"></div>
+      <div class="more"><button class="btn btn--glass btn--lg" id="lotsMore">Все лоты</button></div>
+    </div>
+  </section>
+
+  <section class="section" id="listings">
+    <div class="container">
+      <div class="section__head">
+        <h2 id="listTitle">Свежие объявления</h2>
+        <div class="tools">
+          <select id="sort" aria-label="Сортировка">
+            <option value="date">Сначала новые</option>
+            <option value="priceAsc">Сначала дешёвые</option>
+            <option value="priceDesc">Сначала дорогие</option>
+            <option value="yearDesc">Год: новее</option>
+            <option value="mileAsc">Пробег: меньше</option>
+          </select>
+          <div class="view-switch" role="group" aria-label="Вид">
+            <button class="icon-btn active" data-view="grid" aria-label="Плитка"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></button>
+            <button class="icon-btn" data-view="list" aria-label="Список"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="cards" id="cards"></div>
+      <div class="empty" id="empty" hidden>
+        <div class="empty__icon">🔍</div>
+        <h3>Ничего не нашлось</h3>
+        <p>Попробуйте изменить параметры поиска</p>
+        <button class="btn btn--ghost" id="emptyReset">Сбросить фильтры</button>
+      </div>
+      <div class="more">
+        <button class="btn btn--ghost btn--lg" id="loadMore">Показать ещё</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="section parts" id="parts">
+    <div class="container">
+      <div class="parts-hero">
+        <div>
+          <h2>Запчасти для любого авто</h2>
+          <p><b id="partsTotal">0</b> товаров от магазинов и авторазборов Кыргызстана · доставка по всей стране</p>
+        </div>
+        <form class="parts-search" id="partsSearch" autocomplete="off">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg>
+          <input type="search" id="partsQuery" placeholder="Например: колодки Camry, аккумулятор 74 Ач" aria-label="Поиск запчастей">
+          <button class="btn btn--primary">Найти</button>
+        </form>
+      </div>
+      <div class="cats" id="partCats"></div>
+      <div class="parts-tools">
+        <select id="pfBrand" aria-label="Марка авто"><option value="">Для любой марки</option></select>
+        <select id="pfModel" aria-label="Модель" disabled><option value="">Любая модель</option></select>
+        <div class="seg seg--sm" role="radiogroup" aria-label="Состояние">
+          <label><input type="radio" name="pfCond" value="" checked><span>Все</span></label>
+          <label><input type="radio" name="pfCond" value="Новое"><span>Новые</span></label>
+          <label><input type="radio" name="pfCond" value="Б/у"><span>Б/у</span></label>
+        </div>
+        <label class="check"><input type="checkbox" id="pfOrig"><span>Только оригинал</span></label>
+        <select id="pfSort" aria-label="Сортировка">
+          <option value="pop">Популярные</option>
+          <option value="priceAsc">Сначала дешёвые</option>
+          <option value="priceDesc">Сначала дорогие</option>
+          <option value="rating">По рейтингу</option>
+          <option value="new">Новинки</option>
+        </select>
+      </div>
+      <div class="parts-grid" id="partsGrid"></div>
+      <div class="empty" id="partsEmpty" hidden>
+        <div class="empty__icon">🔧</div>
+        <h3>Такой запчасти пока нет</h3>
+        <p>Измените запрос или оставьте заявку — продавцы предложат цену</p>
+        <button class="btn btn--ghost" id="partsReset">Сбросить фильтры</button>
+      </div>
+      <div class="more"><button class="btn btn--ghost btn--lg" id="partsMore">Показать ещё</button></div>
+    </div>
+  </section>
+
+  <section class="section masters" id="masters">
+    <div class="container">
+      <div class="m-hero">
+        <div class="m-hero__text">
+          <div class="m-hero__kicker">🔧 Автосервисы и частные мастера</div>
+          <h2>Ремонт без поиска по знакомым</h2>
+          <p>Ремонт бампера, автостекло, шиномонтаж, двигатель, электрика, эвакуатор — <b id="mastersTotal">0</b> мастеров с отзывами и ценами. Запись онлайн за минуту.</p>
+          <div class="m-hero__cta">
+            <button class="btn btn--primary btn--lg" id="openRequest">Оставить заявку на ремонт</button>
+            <button class="btn btn--glass btn--lg" id="openBecome">Я мастер — добавить сервис</button>
+          </div>
+          <button class="link-btn link-btn--light" id="myBookings">Мои записи и заявки <b id="bookingsCount">0</b></button>
+        </div>
+        <div class="m-hero__steps">
+          <div><b>1</b>Опишите поломку и прикрепите фото</div>
+          <div><b>2</b>Мастера пришлют цены за 10–15 минут</div>
+          <div><b>3</b>Выберите лучшего и запишитесь</div>
+        </div>
+      </div>
+      <div class="cats" id="serviceCats"></div>
+      <div class="popular" id="popularServices"></div>
+      <div class="parts-tools">
+        <form class="parts-search parts-search--sm" id="mastersSearch" autocomplete="off">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg>
+          <input type="search" id="mastersQuery" placeholder="Услуга или название сервиса" aria-label="Поиск мастеров">
+        </form>
+        <label class="check"><input type="checkbox" id="mfMobile"><span>Выезд к клиенту</span></label>
+        <label class="check"><input type="checkbox" id="mfToday"><span>Свободно сегодня</span></label>
+        <label class="check"><input type="checkbox" id="mfWarranty"><span>С гарантией</span></label>
+        <select id="mfSort" aria-label="Сортировка">
+          <option value="rating">По рейтингу</option>
+          <option value="reviews">По отзывам</option>
+          <option value="price">Сначала дешевле</option>
+        </select>
+      </div>
+      <div class="masters-grid" id="mastersGrid"></div>
+      <div class="empty" id="mastersEmpty" hidden>
+        <div class="empty__icon">🧑‍🔧</div>
+        <h3>Мастеров по запросу не нашлось</h3>
+        <p>Оставьте заявку — её увидят все мастера города</p>
+        <button class="btn btn--primary" data-open-request>Оставить заявку</button>
+      </div>
+      <div class="more"><button class="btn btn--ghost btn--lg" id="mastersMore">Показать ещё</button></div>
+    </div>
+  </section>
+
+  <section class="section promo">
+    <div class="container promo__grid">
+      <div class="promo__card promo__card--red">
+        <h3>Продайте авто за 3 дня</h3>
+        <p>Бесплатное объявление увидят тысячи покупателей по всему Кыргызстану.</p>
+        <button class="btn btn--light" data-open-post>Разместить бесплатно</button>
+      </div>
+      <div class="promo__card promo__card--dark">
+        <h3>Проверка по VIN</h3>
+        <p>Узнайте историю авто: ДТП, залог, растаможка, реальный пробег.</p>
+        <form class="vin" id="vinForm">
+          <input type="text" placeholder="VIN или госномер" maxlength="17" required>
+          <button class="btn btn--primary">Проверить</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="news">
+    <div class="container">
+      <div class="section__head"><h2>Новости и обзоры</h2></div>
+      <div class="news" id="newsGrid"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer__grid">
+    <div>
+      <a href="#" class="logo logo--light"><span class="logo__sun"></span><span>Авто<b>базар</b></span></a>
+      <p class="footer__text">Авторынок Кыргызстана. Бишкек, Ош, Жалал-Абад, Каракол и другие города.</p>
+    </div>
+    <div>
+      <h4>Покупателям</h4>
+      <a href="#listings">Все объявления</a><a href="#brands">Каталог марок</a><a href="#">Проверка по VIN</a><a href="#">Автокредит</a>
+    </div>
+    <div>
+      <h4>Продавцам</h4>
+      <a href="#" data-open-post>Подать объявление</a><a href="#">Для автосалонов</a><a href="#">Реклама</a>
+    </div>
+    <div>
+      <h4>Связь</h4>
+      <a href="tel:+996555000000">+996 555 000 000</a><a href="#">Telegram</a><a href="#">Instagram</a>
+    </div>
+    <div>
+      <h4>Документы</h4>
+      <a href="terms.html">Пользовательское соглашение</a><a href="privacy.html">Политика конфиденциальности</a><a href="rules.html">Правила аукциона и размещения</a>
+    </div>
+  </div>
+  <div class="container footer__bottom">© 2026 Автобазар (avtobazar.kg) · Сделано в Кыргызстане · Фото автомобилей: <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>, свободные лицензии (автор указан на фото)</div>
+</footer>
+
+<!-- Мобильная нижняя панель -->
+<nav class="tabbar">
+  <a href="#" class="tabbar__item active"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Главная</a>
+  <a href="#parts" class="tabbar__item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>Запчасти</a>
+  <button class="tabbar__item tabbar__add" data-open-post><span><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Подать</button>
+  <a href="#masters" class="tabbar__item"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L3 17.8V21h3.2l6.3-6.3a4 4 0 0 0 5.2-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>Мастера</a>
+  <button class="tabbar__item" id="tabCart"><span class="tabbar__icon"><svg viewBox="0 0 24 24"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg><span class="badge" data-cart-count>0</span></span>Корзина</button>
+</nav>
+
+<!-- Карточка объявления -->
+<div class="modal" id="carModal" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__box modal__box--wide" role="dialog" aria-modal="true">
+    <button class="icon-btn modal__close" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div id="carDetail"></div>
+  </div>
+</div>
+
+<!-- Запчасть -->
+<div class="modal" id="partModal" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__box modal__box--wide" role="dialog" aria-modal="true">
+    <button class="icon-btn modal__close" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div id="partDetail"></div>
+  </div>
+</div>
+
+<!-- Корзина -->
+<div class="drawer" id="cart" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <aside class="drawer__panel" role="dialog" aria-modal="true" aria-label="Корзина">
+    <div class="drawer__head">
+      <h2>Корзина</h2>
+      <button class="icon-btn" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="drawer__body" id="cartBody"></div>
+  </aside>
+</div>
+
+<!-- Мастер / запись -->
+<div class="modal" id="masterModal" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__box modal__box--wide" role="dialog" aria-modal="true">
+    <button class="icon-btn modal__close" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div id="masterDetail"></div>
+  </div>
+</div>
+
+<!-- Заявка на ремонт -->
+<div class="modal" id="requestModal" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__box" role="dialog" aria-modal="true">
+    <button class="icon-btn modal__close" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div id="requestBody"></div>
+  </div>
+</div>
+
+<!-- Стать мастером -->
+<div class="modal" id="becomeModal" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__box" role="dialog" aria-modal="true">
+    <button class="icon-btn modal__close" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <h2 class="modal__title">Добавить автосервис</h2>
+    <p class="modal__sub">Бесплатно. Клиенты увидят ваши услуги, цены и смогут записаться онлайн.</p>
+    <form class="post-form" id="becomeForm">
+      <div class="field field--full"><label>Название сервиса</label><input name="name" required placeholder="Например: Кузовной цех «Барс»"></div>
+      <div class="field"><label>Ваше имя</label><input name="master" required placeholder="Бакыт"></div>
+      <div class="field"><label>Опыт, лет</label><input name="years" type="number" min="0" max="60" value="5"></div>
+      <div class="field"><label>Город</label><select name="city" id="bCity"></select></div>
+      <div class="field"><label>Адрес</label><input name="addr" required placeholder="ул. Ахунбаева, 125"></div>
+      <div class="field field--full"><label>Направления</label><div class="check-grid" id="bCats"></div></div>
+      <div class="field field--full"><label>Услуги и цены (каждая с новой строки: услуга — цена)</label><textarea name="services" rows="4" required placeholder="Ремонт бампера — 3000&#10;Покраска бампера — 8000&#10;Полировка фар — 1500"></textarea></div>
+      <div class="field"><label>Часы работы</label><input name="hours" value="09:00–19:00"></div>
+      <div class="field"><label>Телефон / WhatsApp</label><input name="phone" type="tel" required placeholder="+996 700 123 456"></div>
+      <div class="field field--full"><label>Фото мастерской</label><label class="upload"><input type="file" accept="image/*" name="photo" data-preview="bPreview"><span>📷 Загрузить фото</span><img id="bPreview" alt="" hidden></label></div>
+      <label class="check"><input type="checkbox" name="mobile"><span>Выезжаю к клиенту</span></label>
+      <label class="check"><input type="checkbox" name="warranty" checked><span>Даю гарантию</span></label>
+      <button class="btn btn--primary btn--lg field--full">Опубликовать профиль</button>
+    </form>
+  </div>
+</div>
+
+<!-- Вход / регистрация -->
+<div class="modal" id="authModal" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__box modal__box--sm" role="dialog" aria-modal="true">
+    <button class="icon-btn modal__close" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div id="authBody"></div>
+  </div>
+</div>
+
+<!-- Чат -->
+<div class="modal" id="chatModal" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__box modal__box--chat" role="dialog" aria-modal="true">
+    <button class="icon-btn modal__close" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div id="chatBody"></div>
+  </div>
+</div>
+
+<!-- Личный кабинет -->
+<div class="modal" id="cabModal" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__box modal__box--cab" role="dialog" aria-modal="true">
+    <button class="icon-btn modal__close" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div id="cabBody"></div>
+  </div>
+</div>
+
+<!-- Выбор: что разместить -->
+<div class="modal" id="chooseModal" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__box modal__box--sm" role="dialog" aria-modal="true">
+    <button class="icon-btn modal__close" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <h2 class="modal__title">Что хотите разместить?</h2>
+    <div class="choose">
+      <button data-choose="car"><span>🚗</span><b>Продать автомобиль</b><small>Объявление увидят тысячи покупателей</small></button>
+      <button data-choose="part"><span>🔧</span><b>Продать запчасть</b><small>Новые и б/у детали, шины, аксессуары</small></button>
+      <button data-choose="master"><span>🧑‍🔧</span><b>Я мастер / автосервис</b><small>Получайте клиентов и заявки на ремонт</small></button>
+    </div>
+  </div>
+</div>
+
+<!-- Продать запчасть -->
+<div class="modal" id="partPostModal" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__box" role="dialog" aria-modal="true">
+    <button class="icon-btn modal__close" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <h2 class="modal__title">Продать запчасть</h2>
+    <form class="post-form" id="partPostForm">
+      <div class="field field--full"><label>Название</label><input name="title" required placeholder="Фара передняя левая Toyota Camry 70"></div>
+      <div class="field"><label>Категория</label><select name="cat" id="ppCat"></select></div>
+      <div class="field"><label>Состояние</label><select name="cond"><option>Новое</option><option>Б/у</option></select></div>
+      <div class="field"><label>Марка авто</label><select name="brand" id="ppBrand"></select></div>
+      <div class="field"><label>Модель</label><select name="model" id="ppModel"></select></div>
+      <div class="field"><label>Цена, сом</label><input name="price" type="number" min="50" required placeholder="4500"></div>
+      <div class="field"><label>Город</label><select name="city" id="ppCity"></select></div>
+      <div class="field field--full"><label>Описание</label><textarea name="desc" rows="2" placeholder="Артикул, состояние, подходит ли на рестайлинг…"></textarea></div>
+      <div class="field"><label>Телефон</label><input name="phone" type="tel" required placeholder="+996 700 123 456"></div>
+      <div class="field"><label>Фото</label><label class="upload"><input type="file" accept="image/*" name="photo" data-preview="ppPreview"><span>📷 Добавить</span><img id="ppPreview" alt="" hidden></label></div>
+      <button class="btn btn--primary btn--lg field--full">Опубликовать</button>
+    </form>
+  </div>
+</div>
+
+<!-- Лот аукциона -->
+<div class="modal" id="lotModal" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__box modal__box--wide" role="dialog" aria-modal="true">
+    <button class="icon-btn modal__close" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div id="lotDetail"></div>
+  </div>
+</div>
+
+<!-- Подать объявление -->
+<div class="modal" id="postModal" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__box" role="dialog" aria-modal="true">
+    <button class="icon-btn modal__close" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <h2 class="modal__title">Новое объявление</h2>
+    <form class="post-form" id="postForm">
+      <div class="field"><label>Марка</label><select name="brand" id="pBrand" required></select></div>
+      <div class="field"><label>Модель</label><select name="model" id="pModel" required></select></div>
+      <div class="field"><label>Год выпуска</label><input type="number" name="year" min="1980" max="2026" required placeholder="2018"></div>
+      <div class="field"><label>Цена, $</label><input type="number" name="price" min="100" required placeholder="15000"></div>
+      <div class="field"><label>Пробег, км</label><input type="number" name="mileage" min="0" required placeholder="85000"></div>
+      <div class="field"><label>Объём, л</label><input type="number" name="engine" min="0" max="8" step="0.1" placeholder="2.5"></div>
+      <div class="field"><label>Кузов</label><select name="body" id="pBody"></select></div>
+      <div class="field"><label>Топливо</label><select name="fuel" id="pFuel"></select></div>
+      <div class="field"><label>КПП</label><select name="gear" id="pGear"></select></div>
+      <div class="field"><label>Руль</label><select name="wheel"><option>Левый</option><option>Правый</option></select></div>
+      <div class="field"><label>Город</label><select name="city" id="pCity"></select></div>
+      <div class="field"><label>Цвет</label>
+        <div class="colors" id="pColors"></div>
+      </div>
+      <div class="field field--full"><label>Описание</label><textarea name="desc" rows="3" placeholder="Состояние, комплектация, история обслуживания…"></textarea></div>
+      <div class="field field--full"><label>Телефон</label><input type="tel" name="phone" required placeholder="+996 700 123 456"></div>
+      <div class="field field--full"><label>Фото (до 5)</label><label class="upload"><input type="file" accept="image/*" name="photos" multiple id="pPhotos"><span>📷 Добавить фото автомобиля</span></label><div class="thumbs" id="pThumbs"></div></div>
+      <label class="check field--full"><input type="checkbox" name="cleared" checked><span>Растаможен в КР</span></label>
+      <button class="btn btn--primary btn--lg field--full">Опубликовать</button>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="db.js?v=6"></script>
+<script src="data.js?v=6"></script>
+<script src="photos.js"></script>
+<script src="parts_data.js?v=6"></script>
+<script src="parts_photos.js"></script>
+<script src="masters_data.js?v=6"></script>
+<script src="masters_photos.js"></script>
+<script src="app.js?v=6"></script>
+<script src="i18n.js?v=6"></script>
+<script>if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});</script>
+</body>
+</html>

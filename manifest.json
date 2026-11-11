@@ -1,0 +1,16 @@
+{
+  "name": "Автобазар — авто, запчасти и мастера",
+  "short_name": "Автобазар",
+  "description": "Покупка и продажа авто, запчасти, аукцион и автосервисы Кыргызстана",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f5f8",
+  "theme_color": "#e11d2e",
+  "lang": "ru",
+  "icons": [
+    { "src": "img/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "img/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "img/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
