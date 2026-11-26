@@ -461,10 +461,11 @@
     e.target.value = ''; renderCarThumbs();
   });
   $('#pThumbs').addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (b) { carPhotos.splice(+b.dataset.rm, 1); renderCarThumbs(); } });
+  const isTop = r => Date.parse(r.top_until || 0) > Date.now();
   const carFromRow = r => ({
     id: 2e6 + r.id, dbId: r.id, uid: r.user_id, brand: r.brand, model: r.model, body: r.body || 'Седан', year: r.year, price: r.price, mileage: r.mileage,
     fuel: r.fuel || 'Бензин', wheel: r.wheel || 'Левый', gear: r.gear || 'Автомат', drive: '—', color: r.color || 'Белый', engine: +r.engine || 0, hp: 0,
-    city: r.city, cleared: r.cleared, exchange: false, photos: r.photos.length, imgs: r.photos, top: false, views: 0, created: Date.parse(r.created_at),
+    city: r.city, cleared: r.cleared, exchange: false, photos: r.photos.length, imgs: r.photos, top: isTop(r), views: 0, created: Date.parse(r.bumped_at || r.created_at),
     desc: r.descr || 'Без описания', seller: 'Частный продавец', dealer: false, phone: r.phone, market: 1
   });
   pf.addEventListener('submit', e => { e.preventDefault(); requireAuth(publishCar); });
@@ -737,7 +738,7 @@
     id: 3e6 + r.id, dbId: r.id, uid: r.user_id, cat: r.cat, name: r.title, title: r.title, brand: r.brand, model: r.model,
     compat: r.brand ? `${r.brand} ${r.model}` : 'Универсальная', used: r.cond === 'Б/у', cond: r.cond, orig: 'Частное объявление', maker: '—',
     price: r.price, oldPrice: 0, sku: 'PR-' + r.id, shop: 'Частный продавец', city: r.city, addr: r.city, phone: r.phone, stock: 1,
-    rating: 0, reviews: 0, delivery: false, created: Date.parse(r.created_at), photo: 0, img: r.photo || '', desc: r.descr
+    rating: 0, reviews: 0, delivery: false, created: Date.parse(r.bumped_at || r.created_at), top: isTop(r), photo: 0, img: r.photo || '', desc: r.descr
   });
   const PARTS_PAGE = 15;
   const kgs = n => fmt(Math.round(n)) + ' сом';
@@ -781,7 +782,7 @@
     const sale = p.oldPrice ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
     return `<article class="part" data-part="${p.id}">
       <div class="part__media">${partImg(p)}
-        <div class="card__tags">${sale ? `<span class="tag tag--sale">−${sale}%</span>` : ''}<span class="tag ${p.used ? '' : 'tag--new'}">${p.cond}</span></div>
+        <div class="card__tags">${p.top ? '<span class="tag tag--top">ТОП</span>' : ''}${sale ? `<span class="tag tag--sale">−${sale}%</span>` : ''}<span class="tag ${p.used ? '' : 'tag--new'}">${p.cond}</span></div>
       </div>
       <div class="part__body">
         <div class="part__title">${esc(p.title)}</div>
@@ -796,7 +797,7 @@
   const stepper = (id, qty) => `<div class="stepper"><button data-dec="${id}" aria-label="Меньше">−</button><span>${qty} в корзине</span><button data-inc="${id}" aria-label="Больше">+</button></div>`;
 
   function renderParts(append = false) {
-    const list = PARTS.filter(p => partMatches(p, ps)).sort(PART_SORTS[ps.sort]);
+    const list = PARTS.filter(p => partMatches(p, ps)).sort((a, b) => (/^price/.test(ps.sort) ? 0 : (b.top | 0) - (a.top | 0)) || PART_SORTS[ps.sort](a, b));
     const shown = list.slice(0, ps.page * PARTS_PAGE);
     const grid = $('#partsGrid');
     if (append) grid.insertAdjacentHTML('beforeend', shown.slice((ps.page - 1) * PARTS_PAGE).map(partCard).join(''));
@@ -1092,7 +1093,7 @@
   const masterFromRow = r => ({
     id: 4e6 + r.id, dbId: r.id, real: true, uid: r.user_id, cat: r.cats[0], cats: r.cats, name: r.name, master: r.master || '—', years: r.years,
     rating: 0, reviews: 0, city: r.city, addr: r.addr, hours: r.hours, allDay: r.hours === 'круглосуточно', mobile: r.mobile, warranty: r.warranty,
-    spec: 'все марки', verified: r.verified, freeToday: true, phone: r.phone, reply: 15, reviewsList: [], photo: 0, img: r.photo || '',
+    spec: 'все марки', verified: r.verified, top: isTop(r), freeToday: true, phone: r.phone, reply: 15, reviewsList: [], photo: 0, img: r.photo || '',
     services: r.services.length ? r.services : [{ name: 'Осмотр и консультация', price: 0, time: '30 минут' }]
   });
   const ratingHTML = m => m.reviews ? `<b>★ ${m.rating.toFixed(1)}</b> · ${m.reviews} ${plural(m.reviews, 'отзыв', 'отзыва', 'отзывов')}` : '<b class="ok">🆕 Новый на Автобазаре</b>';
@@ -1144,7 +1145,7 @@
     const svc = svcHits(m, ms.q).slice(0, 3);
     return `<article class="master" data-master="${m.id}">
       <div class="master__media">${masterImg(m)}
-        <div class="card__tags">${m.verified ? '<span class="tag tag--ok">✓ Проверен</span>' : ''}${m.freeToday ? '<span class="tag tag--new">Свободно сегодня</span>' : ''}${m.mobile ? '<span class="tag">🚐 Выезд</span>' : ''}</div>
+        <div class="card__tags">${m.top ? '<span class="tag tag--top">★ Рекомендуем</span>' : ''}${m.verified ? '<span class="tag tag--ok">✓ Проверен</span>' : ''}${m.freeToday ? '<span class="tag tag--new">Свободно сегодня</span>' : ''}${m.mobile ? '<span class="tag">🚐 Выезд</span>' : ''}</div>
       </div>
       <div class="master__body">
         <div class="master__cat">${m.cats.map(c => scat(c).icon + ' ' + scat(c).name).join(' · ')}</div>
@@ -1160,7 +1161,7 @@
   }
 
   function renderMasters(append = false) {
-    const list = MASTERS.filter(masterMatches).sort(M_SORTS[ms.sort]);
+    const list = MASTERS.filter(masterMatches).sort((a, b) => (ms.sort === 'price' ? 0 : (b.top | 0) - (a.top | 0)) || M_SORTS[ms.sort](a, b));
     const shown = list.slice(0, ms.page * MPAGE);
     const grid = $('#mastersGrid');
     if (append) grid.insertAdjacentHTML('beforeend', shown.slice((ms.page - 1) * MPAGE).map(masterCard).join(''));
@@ -1655,19 +1656,22 @@
     },
     async ads() {
       const uid = DB.user.id;
-      const [cars, parts] = await Promise.all([
+      const [cars, parts, pays] = await Promise.all([
         DB.select('ab_cars', q => q.eq('user_id', uid).order('created_at', { ascending: false })),
-        DB.select('ab_parts', q => q.eq('user_id', uid).order('created_at', { ascending: false }))
+        DB.select('ab_parts', q => q.eq('user_id', uid).order('created_at', { ascending: false })),
+        DB.select('ab_payments', q => q.eq('user_id', uid).order('created_at', { ascending: false }).limit(20))
       ]);
       const row = (t, r, title, price, img) => `<div class="cab-item">
         <div class="cab-item__img">${img ? `<img src="${img}" alt="">` : '🚗'}</div>
-        <div class="cab-item__info"><b>${esc(title)}</b><small>${price} · <span class="st st--${r.status}">${AD_STATUS[r.status]}</span> · ${ago(Date.parse(r.created_at))}</small></div>
+        <div class="cab-item__info"><b>${esc(title)}</b><small>${price} · <span class="st st--${r.status}">${AD_STATUS[r.status]}</span> · ${ago(Date.parse(r.created_at))}${topNote(r)}</small></div>
         <div class="cab-item__act">
+          ${r.status === 'active' ? `<button class="btn btn--promo" data-promo="${t === 'ab_cars' ? 'car' : 'part'}|${r.id}|${encodeURIComponent(title)}">🚀 Продвинуть</button>` : ''}
           ${r.status === 'active' ? `<button class="btn btn--ghost" data-ad="${t}|${r.id}|sold">Продано</button><button class="btn btn--ghost" data-ad="${t}|${r.id}|hidden">Снять</button>` : `<button class="btn btn--ghost" data-ad="${t}|${r.id}|active">Вернуть</button>`}
           <button class="btn btn--ghost" data-edit="${t === 'ab_cars' ? 'car' : 'part'}|${r.id}" aria-label="Изменить">✏️</button>
           <button class="btn btn--ghost danger" data-ad="${t}|${r.id}|delete" aria-label="Удалить">🗑</button></div></div>`;
       return `<div class="lot__label">Автомобили</div>${cars.length ? cars.map(r => row('ab_cars', r, `${r.brand} ${r.model}, ${r.year}`, usd(r.price), r.photos[0])).join('') : emptyNote('Вы ещё не продаёте авто', '<button class="btn btn--primary" data-go="car">Продать авто</button>')}
-        <div class="lot__label" style="margin-top:16px">Запчасти</div>${parts.length ? parts.map(r => row('ab_parts', r, r.title, kgs(r.price), r.photo)).join('') : emptyNote('Запчастей пока нет', '<button class="btn btn--primary" data-go="part">Продать запчасть</button>')}`;
+        <div class="lot__label" style="margin-top:16px">Запчасти</div>${parts.length ? parts.map(r => row('ab_parts', r, r.title, kgs(r.price), r.photo)).join('') : emptyNote('Запчастей пока нет', '<button class="btn btn--primary" data-go="part">Продать запчасть</button>')}
+        ${payList(pays)}`;
     },
     async orders() {
       const list = await DB.select('ab_orders', q => q.eq('user_id', DB.user.id).order('created_at', { ascending: false }));
@@ -1707,7 +1711,7 @@
         DB.select('ab_offers', q => q.eq('user_id', uid))
       ]);
       const mName = id => (my.find(m => m.dbId === id) || {}).name || '';
-      return `<div class="cab-profiles">${my.map(m => `<span class="chip"><a href="#master-${m.id}" data-close>${esc(m.name)}${m.verified ? ' ✓' : ''}</a><button data-edit="master|${m.dbId}" aria-label="Изменить">✏️</button></span>`).join('')}</div>
+      return `<div class="cab-profiles">${my.map(m => `<span class="chip"><a href="#master-${m.id}" data-close>${esc(m.name)}${m.verified ? ' ✓' : ''}${m.top ? ' ★' : ''}</a><button data-edit="master|${m.dbId}" aria-label="Изменить">✏️</button><button data-promo="master|${m.dbId}|${encodeURIComponent(m.name)}|${m.verified ? 1 : 0}" aria-label="Продвинуть">🚀</button></span>`).join('')}</div>
         <div class="lot__label">Записи клиентов</div>
         ${bk.length ? bk.map(b => `<div class="cab-card"><div class="cab-card__top"><b>${esc(b.service)}</b><span class="st st--${b.status}">${BOOKING_STATUS[b.status]}</span></div>
           <p>🗓 ${new Date(b.slot_date + 'T00:00').getDate()} ${MONTHS[new Date(b.slot_date + 'T00:00').getMonth()]} в ${b.slot_time} · ${esc(mName(b.master_id))}</p>
@@ -1771,6 +1775,8 @@
       try { await DB.update('ab_orders', +id, { status }); toast('Заказ: ' + ORDER_STATUS[status]); renderCab(); } catch (err) { toast(err.message); }
       return;
     }
+    const pm = e.target.closest('[data-promo]');
+    if (pm) { const [kind, id, title, ver] = pm.dataset.promo.split('|'); return openPay(kind, +id, decodeURIComponent(title), ver === '1'); }
     if (await adminClick(e)) return;
     const oc = e.target.closest('[data-open-chat]');
     if (oc) return showChat(+oc.dataset.openChat);
@@ -1798,6 +1804,7 @@
         await loadReviews(); toast('Спасибо за отзыв!'); return renderCab();
       }
       if (f.dataset.form === 'lot') { await createLot(f); return renderCab(); }
+      if (f.dataset.form === 'paycfg') { await savePayConfig(f); return renderCab(); }
       if (f.dataset.offer) {
         await DB.insert('ab_offers', { request_id: +f.dataset.offer, master_id: +f.master.value, price: +f.price.value, time: f.time.value.trim(), note: f.note.value.trim() });
         toast('Предложение отправлено клиенту'); return renderCab();
@@ -1809,8 +1816,8 @@
   async function loadRemote() {
     try {
       const [cars, parts, masters] = await Promise.all([
-        DB.select('ab_cars', q => q.eq('status', 'active').order('created_at', { ascending: false }).limit(500)),
-        DB.select('ab_parts', q => q.eq('status', 'active').order('created_at', { ascending: false }).limit(1000)),
+        DB.select('ab_cars', q => q.eq('status', 'active').order('bumped_at', { ascending: false }).limit(500)),
+        DB.select('ab_parts', q => q.eq('status', 'active').order('bumped_at', { ascending: false }).limit(1000)),
         DB.select('ab_masters', q => q.order('created_at', { ascending: false }))
       ]);
       const drop = (arr, test) => { for (let i = arr.length - 1; i >= 0; i--) if (test(arr[i])) arr.splice(i, 1); };
@@ -2083,21 +2090,25 @@
   const KIND_BASE = { car: 2e6, part: 3e6, master: 4e6 };
   const KIND_TABLE = { car: 'ab_cars', part: 'ab_parts', master: 'ab_masters' };
   CAB.admin = async () => {
-    const [st, reports, masters, cars, parts, lotRows] = await Promise.all([
+    const [st, reports, masters, cars, parts, lotRows, pending, paid, cfg] = await Promise.all([
       DB.rpc('ab_admin_stats'),
       DB.select('ab_reports', q => q.eq('status', 'open').order('created_at', { ascending: false })),
       DB.select('ab_masters', q => q.order('created_at', { ascending: false }).limit(50)),
       DB.select('ab_cars', q => q.order('created_at', { ascending: false }).limit(40)),
       DB.select('ab_parts', q => q.order('created_at', { ascending: false }).limit(40)),
-      DB.select('ab_lots', q => q.order('ends_at', { ascending: false }))
+      DB.select('ab_lots', q => q.order('ends_at', { ascending: false })),
+      DB.select('ab_payments', q => q.eq('status', 'pending').order('created_at')),
+      DB.select('ab_payments', q => q.eq('status', 'paid').gte('decided_at', new Date(Date.now() - 30 * 864e5).toISOString())),
+      payConfig(true)
     ]);
     const STATS = [['users', 'Пользователи'], ['cars', 'Авто'], ['parts', 'Запчасти'], ['masters', 'Мастера'], ['bookings', 'Записи'], ['orders', 'Заказы'], ['requests', 'Заявки'], ['reports', 'Жалобы'], ['bids_today', 'Ставок за сутки']];
     const now = new Date(Date.now() + 36e5 - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
     const adRow = (t, r, title, price) => `<div class="cab-item"><div class="cab-item__img">${(t === 'ab_cars' ? r.photos[0] : r.photo) ? `<img src="${t === 'ab_cars' ? r.photos[0] : r.photo}" alt="">` : '📄'}</div>
       <div class="cab-item__info"><b>${esc(title)}</b><small>${price} · ${esc(r.city)} · ${esc(r.phone)} · <span class="st st--${r.status}">${AD_STATUS[r.status]}</span></small></div>
       <div class="cab-item__act">${r.status === 'active' ? `<button class="btn btn--ghost" data-ad="${t}|${r.id}|hidden">Скрыть</button>` : `<button class="btn btn--ghost" data-ad="${t}|${r.id}|active">Вернуть</button>`}<button class="btn btn--ghost danger" data-ad="${t}|${r.id}|delete">🗑</button><button class="btn btn--ghost" data-adm-ban="${r.user_id}|${encodeURIComponent(title)}" title="Заблокировать автора">🚫</button></div></div>`;
-    return `<div class="adm-stats">${STATS.map(([k, v]) => `<div><b>${st[k]}</b><small>${v}</small></div>`).join('')}</div>
-      <div class="lot__label">Жалобы (${reports.length})</div>
+    return `<div class="adm-stats">${STATS.map(([k, v]) => `<div><b>${st[k]}</b><small>${v}</small></div>`).join('')}<div class="adm-stats__money"><b>${kgs(paid.reduce((s, p) => s + p.amount, 0))}</b><small>Доход за 30 дней</small></div></div>
+      ${adminPayments(pending, cfg)}
+      <div class="lot__label" style="margin-top:16px">Жалобы (${reports.length})</div>
       ${reports.length ? reports.map(r => `<div class="cab-card"><div class="cab-card__top"><b>${esc(r.title || r.kind)}</b><small>${ago(Date.parse(r.created_at))}</small></div><p>${esc(r.reason)}</p>
         <div class="row-btns row-btns--left"><a class="btn btn--ghost" href="#${r.kind}-${r.item_id}" data-close>Открыть</a>
         ${r.item_id >= KIND_BASE[r.kind] ? `<button class="btn btn--ghost" data-adm-hide="${r.kind}|${r.item_id - KIND_BASE[r.kind]}|${r.id}">${r.kind === 'master' ? 'Удалить профиль' : 'Скрыть объявление'}</button>` : '<span class="muted small">демо-объявление</span>'}
@@ -2125,7 +2136,7 @@
         <div class="cab-item__act"><button class="btn btn--ghost danger" data-adm-lotdel="${l.id}">🗑</button></div></div>`).join('')}`;
   };
   async function adminClick(e) {
-    const el = e.target.closest('[data-adm-report],[data-adm-hide],[data-adm-verify],[data-adm-mdel],[data-adm-lotdel]');
+    const el = e.target.closest('[data-adm-report],[data-adm-hide],[data-adm-verify],[data-adm-mdel],[data-adm-lotdel],[data-adm-pay]');
     if (!el) return false;
     adminLog(Object.keys(el.dataset)[0], Object.values(el.dataset)[0]);
     try {
@@ -2142,6 +2153,14 @@
         await DB.update('ab_masters', +id, { verified: v === 'true' }); await loadRemote(); toast(v === 'true' ? 'Отмечен как проверенный' : 'Отметка снята');
       }
       if (el.dataset.admMdel) { if (!confirm('Удалить профиль мастера вместе с записями?')) return true; await DB.remove('ab_masters', +el.dataset.admMdel); await loadRemote(); toast('Удалено'); }
+      if (el.dataset.admPay) {
+        const [id, ok] = el.dataset.admPay.split('|');
+        const note = ok === '1' ? '' : prompt('Причина отказа (её увидит пользователь):', 'Перевод не найден');
+        if (note === null) return true;
+        await DB.rpc('ab_pay_decide', { p_id: +id, p_ok: ok === '1', p_note: note });
+        if (ok === '1') await loadRemote();
+        toast(ok === '1' ? 'Оплата подтверждена — услуга включена' : 'Платёж отклонён');
+      }
       if (el.dataset.admLotdel) { if (!confirm('Удалить лот вместе со ставками?')) return true; await DB.remove('ab_lots', +el.dataset.admLotdel); await loadLots(); toast('Лот удалён'); }
     } catch (err) { toast(err.message); }
     renderCab();
@@ -2158,6 +2177,107 @@
     });
     await loadLots();
     toast('Лот создан');
+  }
+
+  // ---------- платное продвижение: ТОП, поднятие, «Проверен» (оплата переводом, подтверждает админ) ----------
+  const PAY_KIND = {
+    car_top: { name: 'ТОП', icon: '🚀', about: 'Первые места в выдаче и жёлтая метка «ТОП». Объявление также поднимается вверх ленты.' },
+    car_bump: { name: 'Поднять', icon: '⬆️', about: 'Объявление снова вверху ленты — как будто опубликовано только что.' },
+    part_top: { name: 'ТОП', icon: '🚀', about: 'Первые места в каталоге запчастей и метка «ТОП».' },
+    part_bump: { name: 'Поднять', icon: '⬆️', about: 'Запчасть снова вверху списка новых.' },
+    master_top: { name: 'Рекомендуем', icon: '★', about: 'Сервис показывается первым в своей категории с меткой «★ Рекомендуем».' },
+    master_verify: { name: 'Проверенный сервис', icon: '✓', about: 'Администратор проверяет адрес и документы и ставит синюю метку «✓ Проверен». Клиенты доверяют таким сервисам больше.' }
+  };
+  const PAY_METHODS = { mbank: 'MBank', elsom: 'Элсом', odengi: 'О!Деньги' };
+  const PAY_STATUS = { pending: 'на проверке', paid: 'оплачено', rejected: 'отклонено' };
+  const dayMonth = t => { const d = new Date(t); return `${d.getDate()} ${MONTHS[d.getMonth()]}`; };
+  const topNote = r => Date.parse(r.top_until || 0) > Date.now() ? ` · <b class="st st--top">ТОП до ${dayMonth(r.top_until)}</b>` : '';
+  const payTitle = (kind, option) => {
+    const k = PAY_KIND[kind];
+    return `${k.icon} ${k.name}${/_top$/.test(kind) ? ` на ${option} ${plural(+option, 'день', 'дня', 'дней')}` : ''}`;
+  };
+  const payList = pays => pays.length ? `<div class="lot__label" style="margin-top:16px">Мои платежи</div>
+    ${pays.map(p => `<div class="mine"><div><b>${payTitle(p.kind, p.option)} — ${kgs(p.amount)}</b><p>${esc(p.title)}</p>
+      <small><span class="st st--pay-${p.status}">${PAY_STATUS[p.status]}</span> · ${ago(Date.parse(p.created_at))}${p.note ? ' · ' + esc(p.note) : ''}</small></div></div>`).join('')}` : '';
+
+  let payCfg = null;
+  async function payConfig(fresh = false) {
+    if (!payCfg || fresh) {
+      const [row] = await DB.select('ab_settings', q => q.eq('key', 'pay'));
+      payCfg = row ? row.value : { prices: {}, accounts: {} };
+    }
+    return payCfg;
+  }
+
+  let paying = null;
+  async function openPay(kind, id, title, verified = false) {
+    paying = { kind, id, title };
+    $('#payBody').innerHTML = '<div class="waiting"><span class="spinner"></span>Загружаем тарифы…</div>';
+    closeModal($('#cabModal')); openModal($('#payModal'));
+    let cfg;
+    try { cfg = await payConfig(true); } catch (e) { $('#payBody').innerHTML = `<p class="muted">${esc(e.message)}</p>`; return; }
+    const kinds = Object.keys(PAY_KIND).filter(k => k.startsWith(kind + '_') && cfg.prices[k] && !(k === 'master_verify' && verified));
+    const opts = kinds.flatMap(k => Object.entries(cfg.prices[k]).map(([o, price]) => ({ k, o, price })));
+    const methods = Object.keys(PAY_METHODS).filter(m => (cfg.accounts[m] || '').trim());
+    $('#payBody').innerHTML = `<h2 class="modal__title">Продвижение</h2><p class="muted">${esc(title)}</p>
+      <form id="payForm" class="pay-form">
+        <div class="pay-opts">${opts.map((x, i) => `<label class="pay-opt"><input type="radio" name="opt" value="${x.k}|${x.o}" ${i ? '' : 'checked'}>
+          <span><b>${payTitle(x.k, x.o)}</b><small>${PAY_KIND[x.k].about}</small></span><em>${kgs(x.price)}</em></label>`).join('')}</div>
+        ${methods.length ? `<div class="lot__label">Как оплатить</div>
+          <div class="pay-methods">${methods.map((m, i) => `<label class="chip-radio"><input type="radio" name="method" value="${m}" ${i ? '' : 'checked'}><span>${PAY_METHODS[m]}</span></label>`).join('')}</div>
+          <div class="pay-howto" id="payHowto"></div>
+          <label>С какого номера вы перевели<input class="inp" name="payer" type="tel" required maxlength="60" value="${esc(DB.profile?.phone || '')}" placeholder="+996 700 123 456"></label>
+          <button class="btn btn--primary btn--block">Я оплатил(а)</button>
+          <p class="muted small">Администратор сверит перевод и включит услугу — обычно в течение часа. Вы получите уведомление.</p>`
+        : '<div class="waiting">Онлайн-оплата скоро появится: администратор ещё не указал реквизиты для перевода.</div>'}
+      </form>`;
+    syncPayHowto();
+  }
+  function syncPayHowto() {
+    const f = $('#payForm'), box = $('#payHowto');
+    if (!f || !box || !payCfg) return;
+    const [k, o] = f.opt.value.split('|'), m = f.method.value, acc = payCfg.accounts;
+    box.innerHTML = `Переведите <b>${kgs(payCfg.prices[k][o])}</b> через ${PAY_METHODS[m]} на номер
+      <button type="button" class="pay-acc" data-copy="${esc(acc[m])}">${esc(acc[m])} <span>копировать</span></button>${acc.name ? `<br>Получатель: <b>${esc(acc.name)}</b>` : ''}`;
+  }
+  $('#payBody').addEventListener('change', syncPayHowto);
+  $('#payBody').addEventListener('click', e => {
+    const c = e.target.closest('[data-copy]');
+    if (c) navigator.clipboard?.writeText(c.dataset.copy).then(() => toast('Номер скопирован'), () => { });
+  });
+  $('#payBody').addEventListener('submit', async e => {
+    e.preventDefault();
+    const f = e.target, btn = $('.btn--primary', f);
+    const [kind, option] = f.opt.value.split('|');
+    busy(btn, true);
+    try {
+      await DB.insert('ab_payments', { kind, item_id: paying.id, option, method: f.method.value, payer: f.payer.value.trim() });
+      $('#payBody').innerHTML = `<div class="pay-done"><div class="pay-done__icon">⏳</div><h2 class="modal__title">Платёж отправлен на проверку</h2>
+        <p class="muted">${payTitle(kind, option)} — ${esc(paying.title)}. Как только администратор подтвердит перевод, услуга включится автоматически и придёт уведомление.</p>
+        <button class="btn btn--primary" data-close>Понятно</button></div>`;
+    } catch (err) { toast(err.message); busy(btn, false); }
+  });
+
+  function adminPayments(pending, cfg) {
+    const acc = cfg.accounts || {};
+    return `<div class="lot__label">💰 Платежи на проверку (${pending.length})</div>
+      ${pending.length ? pending.map(p => `<div class="cab-card cab-card--pay"><div class="cab-card__top"><b>${kgs(p.amount)} · ${payTitle(p.kind, p.option)}</b><small>${ago(Date.parse(p.created_at))}</small></div>
+        <p>${esc(p.title)}</p><p>Перевод: <b>${PAY_METHODS[p.method]}</b> с номера <b>${esc(p.payer)}</b></p>
+        <div class="row-btns row-btns--left"><button class="btn btn--primary" data-adm-pay="${p.id}|1">✓ Деньги пришли</button><button class="btn btn--ghost" data-adm-pay="${p.id}|0">Отклонить</button></div></div>`).join('')
+        : emptyNote('Новых платежей нет. Проверьте приход денег в приложении банка перед подтверждением.')}
+      <details class="adm-cfg"><summary>Реквизиты и цены</summary>
+        <form class="lot-form" data-form="paycfg">
+          ${Object.entries(PAY_METHODS).map(([m, n]) => `<label>${n}: номер для перевода<input class="inp" name="acc_${m}" value="${esc(acc[m] || '')}" placeholder="пусто — не принимать"></label>`).join('')}
+          <label class="lot-form__wide">Получатель (имя, как видно при переводе)<input class="inp" name="acc_name" value="${esc(acc.name || '')}" placeholder="Например: Жоомарт К."></label>
+          ${Object.entries(cfg.prices || {}).flatMap(([k, o]) => Object.entries(o).map(([opt, price]) => `<label>${payTitle(k, opt)} (${k.startsWith('car') ? 'авто' : k.startsWith('part') ? 'запчасть' : 'сервис'}), сом<input class="inp" name="price_${k}_${opt}" type="number" min="0" value="${price}"></label>`)).join('')}
+          <button class="btn btn--primary lot-form__wide">Сохранить</button></form></details>`;
+  }
+  async function savePayConfig(f) {
+    const cfg = structuredClone(await payConfig(true));
+    Object.keys(PAY_METHODS).concat('name').forEach(m => { cfg.accounts[m] = f['acc_' + m].value.trim(); });
+    Object.entries(cfg.prices).forEach(([k, o]) => Object.keys(o).forEach(opt => { o[opt] = Math.max(0, +f[`price_${k}_${opt}`].value || 0); }));
+    await DB.sb.from('ab_settings').upsert({ key: 'pay', value: cfg, updated_at: new Date().toISOString() }).then(r => { if (r.error) throw new Error(DB.humanError(r.error)); });
+    payCfg = cfg; adminLog('pay_config', ''); toast('Реквизиты и цены сохранены');
   }
 
   // ---------- после входа: админ, чаты, избранное и корзина из аккаунта ----------
@@ -2336,7 +2456,7 @@
           ['body', 'fuel', 'gear', 'wheel'].forEach(k => { if (f[k]) q = q.eq(k, f[k]); });
           if (f.cleared) q = q.eq('cleared', true);
           if (state.city) q = q.eq('city', state.city);
-          return q.order('created_at', { ascending: false }).limit(300);
+          return q.order('bumped_at', { ascending: false }).limit(300);
         });
         if (key !== remoteCarKey) return;
         let added = 0;
@@ -2360,7 +2480,7 @@
           if (ps.cond) q = q.eq('cond', ps.cond);
           const words = likeSafe(ps.q).split(/\s+/).filter(w => w.length > 2).slice(0, 3);
           words.forEach(w => { q = q.ilike('title', `%${w.length > 4 ? w.slice(0, -1) : w}%`); });
-          return q.order('created_at', { ascending: false }).limit(300);
+          return q.order('bumped_at', { ascending: false }).limit(300);
         });
         if (key !== remotePartKey) return;
         let added = 0;

@@ -881,3 +881,39 @@ body.lock { overflow: hidden; }
 
 /* окно входа всегда поверх остальных */
 #authModal { z-index: 140; }
+
+/* ---------- продвижение и оплата ---------- */
+.btn--promo { background: linear-gradient(135deg, #ffd85c, var(--sun)); color: var(--ink); font-weight: 800; border: 0; }
+.btn--promo:hover { filter: brightness(1.05); }
+.btn--block { width: 100%; }
+.st--top { background: #fff3c4; color: #8a5a00; }
+.st--pay-pending { background: #fff7e0; color: #a16207; }
+.st--pay-paid { background: #e3f6ec; color: var(--green); }
+.st--pay-rejected { background: #fdeaea; color: var(--red); }
+.modal__title + .muted { margin: -12px 0 16px; }
+.pay-form { display: flex; flex-direction: column; gap: 12px; }
+.pay-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; color: var(--ink-2); }
+.pay-opts { display: flex; flex-direction: column; gap: 8px; }
+.pay-opt { display: flex !important; flex-direction: row !important; align-items: center; gap: 12px; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 14px; cursor: pointer; transition: border-color .15s, background .15s; }
+.pay-opt input { accent-color: var(--red); width: 18px; height: 18px; flex-shrink: 0; }
+.pay-opt span { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.pay-opt b { font-size: 15px; color: var(--ink); }
+.pay-opt small { font-weight: 500; color: var(--ink-3); line-height: 1.35; }
+.pay-opt em { font-style: normal; font-weight: 800; font-size: 16px; color: var(--ink); white-space: nowrap; }
+.pay-opt:has(input:checked) { border-color: var(--red); background: #fff5f6; }
+.pay-methods { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-radio input { display: none; }
+.chip-radio span { display: inline-block; padding: 8px 14px; border: 1.5px solid var(--line); border-radius: 999px; font-weight: 700; cursor: pointer; }
+.chip-radio input:checked + span { border-color: var(--red); background: #fff5f6; color: var(--red); }
+.pay-howto { background: var(--bg); border-radius: 12px; padding: 12px 14px; font-size: 14px; line-height: 1.6; }
+.pay-acc { display: inline-flex; align-items: center; gap: 6px; border: 0; background: #fff; border-radius: 8px; padding: 2px 8px; font: inherit; font-weight: 800; cursor: pointer; }
+.pay-acc span { font-size: 11px; font-weight: 700; color: var(--red); }
+.pay-done { text-align: center; padding: 10px 0; }
+.pay-done__icon { font-size: 44px; margin-bottom: 6px; }
+.cab-card--pay { border-left: 4px solid var(--sun); }
+.adm-stats__money { background: #e3f6ec !important; }
+.adm-stats__money b { color: var(--green); }
+.adm-cfg { margin-top: 12px; border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+.adm-cfg summary { cursor: pointer; font-weight: 800; }
+.adm-cfg .lot-form { margin-top: 12px; }
+.chip button + button { margin-left: 2px; }

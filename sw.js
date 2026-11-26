@@ -1,5 +1,5 @@
 // Автобазар: офлайн-кэш своих файлов. Данные из Supabase всегда идут из сети.
-const CACHE = 'avtobazar-v7';
+const CACHE = 'avtobazar-v8';
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html', './manifest.json', './img/icons/icon-192.png'])).then(() => self.skipWaiting()));
 });
